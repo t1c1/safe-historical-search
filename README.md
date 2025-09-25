@@ -252,15 +252,19 @@ docker run -v ./files:/data -v ./index:/index -p 5001:5001 safe-historical-searc
 
 ## 🗺️ **Development Roadmap**
 
-### ✅ **Completed in v0.2.x**
+### ✅ **Completed in v0.2.x** 
+#### *Originally planned for v0.2.0:*
+- ~~**🤖 ChatGPT (OpenAI) logs import**~~ ✅ Full ChatGPT export support implemented
+- ~~**🏷️ Account filtering in search UI**~~ ✅ Multi-account support with provider pills
+- ~~**📱 Single-step installer**~~ ✅ `quickstart.sh` provides one-command setup
+
+#### *Additional features delivered:*
 - ~~**🎯 Interactive clickable filters**~~ ✅ Click pills to filter instantly
 - ~~**🔍 Expandable conversation context**~~ ✅ Full thread preview with highlighting
 - ~~**📅 Smart date picker**~~ ✅ Native calendar widgets replace confusing sliders
 - ~~**🤖 Unified AI roles**~~ ✅ Simplified to Human/Assistant (system+assistant combined)
 - ~~**⚡ Real-time filtering**~~ ✅ Instant results without page refreshes
 - ~~**📱 Mobile responsiveness**~~ ✅ Works beautifully on all devices
-- ~~**🤖 ChatGPT (OpenAI) logs import**~~ ✅ Full ChatGPT export support implemented
-- ~~**🏷️ Account filtering in search UI**~~ ✅ Multi-account support with provider pills
 
 ### 🎯 **Next Release (v0.3.0) - Q4 2025**
 - **🔍 Advanced search operators** - AND, OR, NOT, parentheses, quotes
