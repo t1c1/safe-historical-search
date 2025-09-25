@@ -182,7 +182,25 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
             <label class="checkbox-label">
               <input type="checkbox" name="wild" value="1" {% if wild %}checked{% endif %}>
               <span>Smart expand</span>
+              <span style="font-size: 11px; color: #6b7280; margin-left: 4px;" title="Automatically adds wildcards to search terms for partial matching">(?)</span>
             </label>
+          </div>
+          <div class="control-group">
+            <label>🤖 Provider</label>
+            <select name="provider">
+              <option value="" {% if not provider %}selected{% endif %}>All Providers</option>
+              <option value="claude" {% if provider == 'claude' %}selected{% endif %}>🔵 Claude</option>
+              <option value="chatgpt" {% if provider == 'chatgpt' %}selected{% endif %}>🟢 ChatGPT</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>👤 Role</label>
+            <select name="role">
+              <option value="" {% if not role %}selected{% endif %}>All Roles</option>
+              <option value="user" {% if role == 'user' %}selected{% endif %}>Human</option>
+              <option value="assistant" {% if role == 'assistant' %}selected{% endif %}>Assistant</option>
+              <option value="system" {% if role == 'system' %}selected{% endif %}>System</option>
+            </select>
           </div>
           <div class="control-group">
             <label>📅 From</label>
@@ -253,7 +271,7 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
       {% if total_pages > 1 %}
         <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin: 32px 0; padding: 24px;">
           {% if has_prev %}
-            <a href="?q={{q|e}}&wild={{wild|int}}&date_from={{date_from}}&date_to={{date_to}}&sort={{sort}}&page={{page-1}}&per_page={{per_page}}" 
+            <a href="?q={{q|e}}&wild={{wild|int}}&provider={{provider}}&role={{role}}&date_from={{date_from}}&date_to={{date_to}}&sort={{sort}}&page={{page-1}}&per_page={{per_page}}" 
                style="padding: 12px 20px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">
               ← Previous
             </a>
@@ -264,7 +282,7 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
               {% if p == page %}
                 <span style="padding: 8px 12px; background: #1e40af; color: white; border-radius: 6px; font-weight: 600;">{{p}}</span>
               {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
-                <a href="?q={{q|e}}&wild={{wild|int}}&date_from={{date_from}}&date_to={{date_to}}&sort={{sort}}&page={{p}}&per_page={{per_page}}" 
+                <a href="?q={{q|e}}&wild={{wild|int}}&provider={{provider}}&role={{role}}&date_from={{date_from}}&date_to={{date_to}}&sort={{sort}}&page={{p}}&per_page={{per_page}}" 
                    style="padding: 8px 12px; color: #374151; text-decoration: none; border-radius: 6px; transition: background 0.2s;">{{p}}</a>
               {% elif p == 4 or p == total_pages - 3 %}
                 <span style="color: #9ca3af;">…</span>
@@ -273,7 +291,7 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
           </div>
           
           {% if has_next %}
-            <a href="?q={{q|e}}&wild={{wild|int}}&date_from={{date_from}}&date_to={{date_to}}&sort={{sort}}&page={{page+1}}&per_page={{per_page}}" 
+            <a href="?q={{q|e}}&wild={{wild|int}}&provider={{provider}}&role={{role}}&date_from={{date_from}}&date_to={{date_to}}&sort={{sort}}&page={{page+1}}&per_page={{per_page}}" 
                style="padding: 12px 20px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">
               Next →
             </a>
@@ -281,7 +299,7 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
         </div>
         
         <div style="text-align: center; margin: 16px 0;">
-          <select onchange="window.location.href='?q={{q|e}}&wild={{wild|int}}&date_from={{date_from}}&date_to={{date_to}}&sort={{sort}}&page=1&per_page=' + this.value" 
+          <select onchange="window.location.href='?q={{q|e}}&wild={{wild|int}}&provider={{provider}}&role={{role}}&date_from={{date_from}}&date_to={{date_to}}&sort={{sort}}&page=1&per_page=' + this.value" 
                   style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;">
             <option value="50" {% if per_page == 50 %}selected{% endif %}>50 per page</option>
             <option value="100" {% if per_page == 100 %}selected{% endif %}>100 per page</option>
@@ -458,6 +476,8 @@ def make_app(db_path: str):
         date_from = request.args.get("date_from") or None
         date_to = request.args.get("date_to") or None
         sort = request.args.get("sort") or "rank"
+        provider_filter = request.args.get("provider", "")
+        role_filter = request.args.get("role", "")
         page = int(request.args.get("page", "1"))
         per_page = int(request.args.get("per_page", "100"))
         
@@ -525,6 +545,14 @@ def make_app(db_path: str):
             if date_to:
                 base_sql += " AND (d.date IS NOT NULL AND d.date <= ?)"
                 params.append(date_to)
+            if provider_filter:
+                if provider_filter == "claude":
+                    base_sql += " AND d.source LIKE '%anthropic%'"
+                elif provider_filter == "chatgpt":
+                    base_sql += " AND d.source LIKE '%chatgpt%'"
+            if role_filter:
+                base_sql += " AND d.role = ?"
+                params.append(role_filter)
             # Get total count first
             count_sql = base_sql.replace(
                 "SELECT d.id, d.conv_id, d.title, d.role, d.date, d.source, snippet(docs_fts, 0, '<mark>', '</mark>', ' … ', 12) as snip",
@@ -607,6 +635,8 @@ def make_app(db_path: str):
             date_from=date_from or "",
             date_to=date_to or "",
             sort=sort,
+            provider=provider_filter,
+            role=role_filter,
             page=page,
             per_page=per_page,
             total_count=total_count,
