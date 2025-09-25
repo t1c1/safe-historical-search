@@ -1,5 +1,5 @@
 import argparse, sqlite3, os, re
-from flask import Flask, request, render_template_string, redirect, url_for, flash
+from flask import Flask, request, render_template_string, redirect, url_for, flash, jsonify
 
 
 TEMPLATE = """
@@ -149,6 +149,39 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
   font-size: 12px; color: #10b981; margin-top: 8px; 
   display: flex; align-items: center; gap: 4px;
 }
+/* Conversation shelf styles */
+.conversation-shelf {
+  position: fixed; top: 0; right: -50%; width: 50%; height: 100vh;
+  background: white; box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  transition: right 0.3s ease-in-out; z-index: 1000;
+  display: flex; flex-direction: column;
+}
+.conversation-shelf.open { right: 0; }
+.shelf-header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+  color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.shelf-content { flex: 1; overflow-y: auto; padding: 20px; }
+.shelf-close {
+  background: rgba(255,255,255,0.2); border: none; color: white;
+  border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 16px;
+}
+.shelf-close:hover { background: rgba(255,255,255,0.3); }
+.shelf-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); opacity: 0; visibility: hidden;
+  transition: all 0.3s ease-in-out; z-index: 999;
+}
+.shelf-overlay.open { opacity: 1; visibility: visible; }
+.message-item {
+  border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin: 12px 0;
+  background: #fafafa;
+}
+.message-role {
+  font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+}
+.message-content { white-space: pre-wrap; line-height: 1.5; }
 @media (max-width: 768px) {
   .content { padding: 20px; }
   .search-row { flex-direction: column; }
@@ -156,6 +189,8 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
   .controls { flex-direction: column; align-items: flex-start; gap: 12px; }
   .result-header { flex-direction: column; gap: 12px; }
   .date-slider { width: 150px; }
+  .conversation-shelf { width: 100%; right: -100%; }
+  .conversation-shelf.open { right: 0; }
 }
 </style>
 <meta name="referrer" content="no-referrer"/>
@@ -283,7 +318,7 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
           <div class="result-content">{{r['snip']|safe}}</div>
           
           <div class="result-actions">
-            <a href="{{ url_for('conversation', conv_id=r['conv_id']) }}">
+            <a href="#" onclick="openConversation('{{r['conv_id']}}'); return false;">
               📖 View Full Conversation
             </a>
             {% if r['external_url'] %}
@@ -460,6 +495,17 @@ body {
     </div>
 
     <div class="admin-section">
+      <h2>📊 Conversation Analytics</h2>
+      <div id="analyticsContent">
+        <div style="text-align: center; padding: 20px; color: #6b7280;">
+          <button onclick="loadAnalytics()" style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+            📈 Load Analytics Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-section">
       <h2>📊 Database Info</h2>
       <p>Current database location: <code>{{db_path}}</code></p>
       <p>To completely rebuild the index, delete the database file and reindex your data.</p>
@@ -491,6 +537,20 @@ FROM docs_fts
 JOIN docs d ON d.rowid = docs_fts.rowid
 WHERE docs_fts MATCH ?
 ORDER BY rank
+
+<!-- Conversation Shelf -->
+<div class="shelf-overlay" onclick="closeConversation()"></div>
+<div class="conversation-shelf" id="conversationShelf">
+  <div class="shelf-header">
+    <h2 id="shelfTitle">Conversation</h2>
+    <button class="shelf-close" onclick="closeConversation()">✕</button>
+  </div>
+  <div class="shelf-content" id="shelfContent">
+    <div style="text-align: center; color: #6b7280; padding: 40px;">
+      Select a conversation to view it here
+    </div>
+  </div>
+</div>
 """
 
 
@@ -732,6 +792,27 @@ def make_app(db_path: str):
             db_path=db_holder["db_path"]
         )
 
+    @app.route("/api/analytics")
+    def api_analytics():
+        """Analytics API endpoint"""
+        try:
+            from analytics import ConversationAnalytics
+            analytics = ConversationAnalytics(db_holder["db_path"])
+            
+            overview = analytics.get_overview_stats()
+            temporal = analytics.get_temporal_patterns()
+            
+            return jsonify({
+                'overview': overview,
+                'temporal': temporal,
+                'status': 'success'
+            })
+        except Exception as e:
+            return jsonify({
+                'error': str(e),
+                'status': 'error'
+            }), 500
+
     @app.route('/favicon.ico')
     def favicon():
         return ("", 204)
@@ -772,6 +853,25 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; marg
   </div>
 {% endfor %}
 """
+
+    @app.route("/api/conversation/<conv_id>")
+    def api_conversation(conv_id):
+        """API endpoint for conversation shelf"""
+        rows = db_holder["conn"].execute(
+            "SELECT title, role, date, ts, content, source FROM docs WHERE conv_id=? ORDER BY ts, rowid",
+            (conv_id,)
+        ).fetchall()
+        if not rows:
+            return {"error": "Conversation not found"}, 404
+        
+        title = rows[0]["title"] or f"Conversation {conv_id}"
+        messages = [{"role": r["role"], "date": r["date"], "content": r["content"]} for r in rows]
+        
+        return {
+            "title": title,
+            "conv_id": conv_id,
+            "messages": messages
+        }
 
     @app.route("/conv/<conv_id>")
     def conversation(conv_id):
