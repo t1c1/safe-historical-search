@@ -137,12 +137,25 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
 .flash.success{ background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
 .flash.error{ background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
 .flash.warning{ background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; }
+/* Date slider styles */
+.date-slider-container { margin: 8px 0; }
+.date-slider { width: 200px; margin: 0 8px; }
+.date-display { font-size: 12px; color: #6b7280; margin-top: 4px; }
+.filter-section { 
+  background: white; border-radius: 12px; padding: 20px; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;
+}
+.realtime-note {
+  font-size: 12px; color: #10b981; margin-top: 8px; 
+  display: flex; align-items: center; gap: 4px;
+}
 @media (max-width: 768px) {
   .content { padding: 20px; }
   .search-row { flex-direction: column; }
   .search-input { min-width: 100%; }
   .controls { flex-direction: column; align-items: flex-start; gap: 12px; }
   .result-header { flex-direction: column; gap: 12px; }
+  .date-slider { width: 150px; }
 }
 </style>
 <meta name="referrer" content="no-referrer"/>
@@ -177,46 +190,65 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
           <button type="submit" class="search-btn">Search</button>
         </div>
         
-        <div class="controls">
-          <div class="control-group">
-            <label class="checkbox-label">
-              <input type="checkbox" name="wild" value="1" {% if wild %}checked{% endif %}>
-              <span>Smart expand</span>
-              <span style="font-size: 11px; color: #6b7280; margin-left: 4px;" title="Automatically adds wildcards to search terms for partial matching">(?)</span>
-            </label>
+        <div class="filter-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; color: #374151;">🔍 Filters</h3>
+            <div class="realtime-note">
+              ⚡ Real-time filtering
+            </div>
           </div>
-          <div class="control-group">
-            <label>🤖 Provider</label>
-            <select name="provider">
-              <option value="" {% if not provider %}selected{% endif %}>All Providers</option>
-              <option value="claude" {% if provider == 'claude' %}selected{% endif %}>🔵 Claude</option>
-              <option value="chatgpt" {% if provider == 'chatgpt' %}selected{% endif %}>🟢 ChatGPT</option>
-            </select>
+          
+          <div class="controls">
+            <div class="control-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="wild" value="1" {% if wild %}checked{% endif %} onchange="applyFilters()">
+                <span>Smart expand</span>
+                <span style="font-size: 11px; color: #6b7280; margin-left: 4px;" title="Automatically adds wildcards to search terms for partial matching">(?)</span>
+              </label>
+            </div>
+            <div class="control-group">
+              <label>🤖 Provider</label>
+              <select name="provider" onchange="applyFilters()">
+                <option value="" {% if not provider %}selected{% endif %}>All Providers</option>
+                <option value="claude" {% if provider == 'claude' %}selected{% endif %}>🔵 Claude</option>
+                <option value="chatgpt" {% if provider == 'chatgpt' %}selected{% endif %}>🟢 ChatGPT</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>👤 Role</label>
+              <select name="role" onchange="applyFilters()">
+                <option value="" {% if not role %}selected{% endif %}>All Roles</option>
+                <option value="user" {% if role == 'user' %}selected{% endif %}>Human</option>
+                <option value="assistant" {% if role == 'assistant' %}selected{% endif %}>Assistant</option>
+                <option value="system" {% if role == 'system' %}selected{% endif %}>System</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>📊 Sort</label>
+              <select name="sort" onchange="applyFilters()">
+                <option value="rank" {% if sort == 'rank' %}selected{% endif %}>Relevance</option>
+                <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+                <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
+              </select>
+            </div>
           </div>
-          <div class="control-group">
-            <label>👤 Role</label>
-            <select name="role">
-              <option value="" {% if not role %}selected{% endif %}>All Roles</option>
-              <option value="user" {% if role == 'user' %}selected{% endif %}>Human</option>
-              <option value="assistant" {% if role == 'assistant' %}selected{% endif %}>Assistant</option>
-              <option value="system" {% if role == 'system' %}selected{% endif %}>System</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label>📅 From</label>
-            <input type="date" name="date_from" value="{{date_from}}"/>
-          </div>
-          <div class="control-group">
-            <label>📅 To</label>
-            <input type="date" name="date_to" value="{{date_to}}"/>
-          </div>
-          <div class="control-group">
-            <label>📊 Sort</label>
-            <select name="sort">
-              <option value="rank" {% if sort == 'rank' %}selected{% endif %}>Relevance</option>
-              <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
-              <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
-            </select>
+          
+          <div style="display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap;">
+            <div class="control-group">
+              <label>📅 Date Range</label>
+              <div class="date-slider-container">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <input type="range" id="dateFromSlider" class="date-slider" min="2020" max="2025" value="2020" onchange="updateDateRange()">
+                  <span>to</span>
+                  <input type="range" id="dateToSlider" class="date-slider" min="2020" max="2025" value="2025" onchange="updateDateRange()">
+                </div>
+                <div class="date-display">
+                  <span id="dateFromDisplay">2020</span> - <span id="dateToDisplay">2025</span>
+                </div>
+                <input type="hidden" name="date_from" value="{{date_from}}"/>
+                <input type="hidden" name="date_to" value="{{date_to}}"/>
+              </div>
+            </div>
           </div>
         </div>
       </form>
