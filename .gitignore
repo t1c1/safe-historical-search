@@ -1,0 +1,13 @@
+test_env/
+__pycache__/
+*.pyc
+.DS_Store
+*.db
+index/
+.venv/
+venv/
+anthropic-data/
+files/
+*.pdf
+*.log
+server.log
