@@ -84,8 +84,9 @@ body {
 .pill{ 
   padding: 6px 14px; border-radius: 20px; font-size: 13px; 
   font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-  border: 1px solid;
+  border: 1px solid; cursor: pointer; transition: all 0.2s;
 }
+.pill:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 .pill.anthropic { 
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
   color: #1e40af; border-color: #93c5fd;
@@ -99,6 +100,15 @@ body {
   color: #374151; border-color: #d1d5db;
 }
 .result-content { font-size: 16px; line-height: 1.7; color: #374151; margin-bottom: 16px; }
+.expand-context { margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+.context-message { margin-bottom: 16px; padding: 12px; border-radius: 8px; }
+.context-message.current { background: #fef3c7; border: 2px solid #f59e0b; }
+.context-message.user { background: #eff6ff; }
+.context-message.assistant { background: #f0fdf4; }
+.context-header { font-weight: 600; margin-bottom: 8px; color: #374151; }
+.context-content { color: #6b7280; }
+.expand-btn { color: #3b82f6; cursor: pointer; font-weight: 500; }
+.expand-btn:hover { text-decoration: underline; }
 mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3px 6px; border-radius: 6px; font-weight: 600; }
 .result-actions { display: flex; gap: 16px; align-items: center; }
 .result-actions a { 
@@ -137,10 +147,15 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
 .flash.success{ background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
 .flash.error{ background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
 .flash.warning{ background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; }
-/* Date slider styles */
-.date-slider-container { margin: 8px 0; }
-.date-slider { width: 200px; margin: 0 8px; }
-.date-display { font-size: 12px; color: #6b7280; margin-top: 4px; }
+/* Date range picker styles */
+.date-range-container { margin: 8px 0; }
+.date-range-container input[type="date"] { 
+  min-width: 130px; 
+}
+.date-range-container input[type="date"]:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+}
 .filter-section { 
   background: white; border-radius: 12px; padding: 20px; 
   box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;
@@ -188,7 +203,8 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
   .search-input { min-width: 100%; }
   .controls { flex-direction: column; align-items: flex-start; gap: 12px; }
   .result-header { flex-direction: column; gap: 12px; }
-  .date-slider { width: 150px; }
+  .date-range-container { flex-direction: column; align-items: stretch; gap: 4px; }
+  .date-range-container input[type="date"] { min-width: unset; }
   .conversation-shelf { width: 100%; right: -100%; }
   .conversation-shelf.open { right: 0; }
 }
@@ -238,7 +254,7 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
               <label class="checkbox-label">
                 <input type="checkbox" name="wild" value="1" {% if wild %}checked{% endif %} onchange="applyFilters()">
                 <span>Smart expand</span>
-                <span style="font-size: 11px; color: #6b7280; margin-left: 4px;" title="Automatically adds wildcards to search terms for partial matching">(?)</span>
+                <span style="font-size: 11px; color: #6b7280; margin-left: 4px;" title="Automatically adds wildcards to search terms for partial matching (enabled by default)">(?)</span>
               </label>
             </div>
             <div class="control-group">
@@ -253,9 +269,8 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
               <label>👤 Role</label>
               <select name="role" onchange="applyFilters()">
                 <option value="" {% if not role %}selected{% endif %}>All Roles</option>
-                <option value="user" {% if role == 'user' %}selected{% endif %}>Human</option>
-                <option value="assistant" {% if role == 'assistant' %}selected{% endif %}>Assistant</option>
-                <option value="system" {% if role == 'system' %}selected{% endif %}>System</option>
+                <option value="user" {% if role == 'user' %}selected{% endif %}>👤 Human</option>
+                <option value="assistant" {% if role == 'assistant' %}selected{% endif %}>🤖 Assistant</option>
               </select>
             </div>
             <div class="control-group">
@@ -271,17 +286,21 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
           <div style="display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap;">
             <div class="control-group">
               <label>📅 Date Range</label>
-              <div class="date-slider-container">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <input type="range" id="dateFromSlider" class="date-slider" min="2020" max="2025" value="2020" onchange="updateDateRange()">
-                  <span>to</span>
-                  <input type="range" id="dateToSlider" class="date-slider" min="2020" max="2025" value="2025" onchange="updateDateRange()">
-                </div>
-                <div class="date-display">
-                  <span id="dateFromDisplay">2020</span> - <span id="dateToDisplay">2025</span>
-                </div>
-                <input type="hidden" name="date_from" value="{{date_from}}"/>
-                <input type="hidden" name="date_to" value="{{date_to}}"/>
+              <div class="date-range-container" style="display: flex; align-items: center; gap: 8px;">
+                <input type="date" name="date_from" value="{{date_from}}" 
+                       onchange="applyFilters()" 
+                       title="Start date (leave empty for no limit)"
+                       style="padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
+                <span style="color: #6b7280;">to</span>
+                <input type="date" name="date_to" value="{{date_to}}" 
+                       onchange="applyFilters()" 
+                       title="End date (leave empty for no limit)"
+                       style="padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;">
+                {% if date_from or date_to %}
+                  <button type="button" onclick="clearDateRange()" 
+                          style="padding: 4px 8px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; cursor: pointer;"
+                          title="Clear date filters">✕</button>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -308,14 +327,22 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
           </div>
           
           <div class="result-meta">
-            <div class="pill {% if 'anthropic' in r['source'] %}anthropic{% elif 'chatgpt' in r['source'] %}chatgpt{% else %}default{% endif %}">
+            <div class="pill {% if 'anthropic' in r['source'] %}anthropic{% elif 'chatgpt' in r['source'] %}chatgpt{% else %}default{% endif %}" 
+                 onclick="filterByProvider('{% if 'anthropic' in r['source'] %}claude{% elif 'chatgpt' in r['source'] %}chatgpt{% endif %}')" 
+                 title="Click to filter by this provider">
               {% if 'anthropic' in r['source'] %}🔵 Claude{% elif 'chatgpt' in r['source'] %}🟢 ChatGPT{% else %}{{r['source']}}{% endif %}
             </div>
-            <div class="pill default">{{r['role']}}</div>
-            {% if r['date'] %}<div class="pill default">{{r['date']}}</div>{% endif %}
+            <div class="pill default" onclick="filterByRole('{% if r['role'] == 'user' %}user{% else %}assistant{% endif %}')" title="Click to filter by {% if r['role'] == 'user' %}human{% else %}assistant{% endif %} messages">
+              {% if r['role'] == 'user' %}👤 Human{% else %}🤖 Assistant{% endif %}
+            </div>
+            {% if r['date'] %}<div class="pill default" onclick="filterByDate('{{r['date']}}')" title="Click to filter by this date">{{r['date']}}</div>{% endif %}
           </div>
           
-          <div class="result-content">{{r['snip']|safe}}</div>
+          <div class="result-content">
+            {{r['snip']|safe}}
+            <div class="expand-btn" onclick="toggleContext('{{r['id']}}', '{{r['conv_id']}}')" id="expand-btn-{{r['id']}}">🔍 Show context</div>
+            <div class="expand-context" id="context-{{r['id']}}" style="display: none;"></div>
+          </div>
           
           <div class="result-actions">
             <a href="#" onclick="openConversation('{{r['conv_id']}}'); return false;">
@@ -382,6 +409,116 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
     Made with ❤️ in a time of war • Made in America • <a href="https://tom.ms" style="color: #6b7280; text-decoration: none;">tom.ms</a>
   </div>
 </div>
+
+<script>
+function filterByProvider(provider) {
+  // Update the form control
+  const providerSelect = document.querySelector('select[name="provider"]');
+  if (providerSelect) {
+    providerSelect.value = provider;
+  }
+  applyFilters();
+}
+
+function filterByRole(role) {
+  // Update the form control
+  const roleSelect = document.querySelector('select[name="role"]');
+  if (roleSelect) {
+    roleSelect.value = role;
+  }
+  applyFilters();
+}
+
+function filterByDate(date) {
+  // Update the form controls
+  const dateFromInput = document.querySelector('input[name="date_from"]');
+  const dateToInput = document.querySelector('input[name="date_to"]');
+  if (dateFromInput && dateToInput) {
+    dateFromInput.value = date;
+    dateToInput.value = date;
+  }
+  applyFilters();
+}
+
+function clearDateRange() {
+  const dateFromInput = document.querySelector('input[name="date_from"]');
+  const dateToInput = document.querySelector('input[name="date_to"]');
+  if (dateFromInput && dateToInput) {
+    dateFromInput.value = '';
+    dateToInput.value = '';
+  }
+  applyFilters();
+}
+
+async function toggleContext(messageId, convId) {
+  const contextDiv = document.getElementById(`context-${messageId}`);
+  const expandBtn = document.getElementById(`expand-btn-${messageId}`);
+  
+  if (contextDiv.style.display === 'none') {
+    // Show context
+    expandBtn.textContent = '⏳ Loading context...';
+    
+    try {
+      const response = await fetch(`/api/conversation/${convId}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        contextDiv.innerHTML = `<div style="color: #dc2626;">Error: ${data.error}</div>`;
+      } else {
+        let contextHtml = `<div style="font-weight: 600; margin-bottom: 12px;">📖 Full Conversation: ${data.title}</div>`;
+        
+        data.messages.forEach((msg, index) => {
+          const isCurrentMessage = msg.content.includes(document.querySelector(`#context-${messageId}`).closest('.result').querySelector('.result-content mark')?.textContent || '');
+          const messageClass = isCurrentMessage ? 'context-message current' : `context-message ${msg.role}`;
+          
+          contextHtml += `
+            <div class="${messageClass}">
+              <div class="context-header">
+                ${msg.role === 'user' ? '👤' : '🤖'} ${msg.role.charAt(0).toUpperCase() + msg.role.slice(1)}
+                ${msg.date ? `• ${msg.date}` : ''}
+                ${isCurrentMessage ? ' • 📍 Current Result' : ''}
+              </div>
+              <div class="context-content">${msg.content.substring(0, 500)}${msg.content.length > 500 ? '...' : ''}</div>
+            </div>
+          `;
+        });
+        
+        contextDiv.innerHTML = contextHtml;
+      }
+    } catch (error) {
+      contextDiv.innerHTML = `<div style="color: #dc2626;">Error loading context: ${error.message}</div>`;
+    }
+    
+    contextDiv.style.display = 'block';
+    expandBtn.textContent = '🔼 Hide context';
+  } else {
+    // Hide context
+    contextDiv.style.display = 'none';
+    expandBtn.textContent = '🔍 Show context';
+  }
+}
+
+function openConversation(convId) {
+  window.open(`/conv/${convId}`, '_blank');
+}
+
+function applyFilters() {
+  // Reset to first page when filters change
+  const form = document.querySelector('form');
+  if (form) {
+    // Add or update page parameter to reset to page 1
+    let pageInput = form.querySelector('input[name="page"]');
+    if (!pageInput) {
+      pageInput = document.createElement('input');
+      pageInput.type = 'hidden';
+      pageInput.name = 'page';
+      form.appendChild(pageInput);
+    }
+    pageInput.value = '1';
+    form.submit();
+  }
+}
+</script>
 """
 
 ADMIN_TEMPLATE = """
@@ -564,7 +701,7 @@ def make_app(db_path: str):
     @app.route("/", methods=["GET"])
     def home():
         q = request.args.get("q", "").strip()
-        wild = request.args.get("wild") == "1"
+        wild = request.args.get("wild", "1") == "1"
         date_from = request.args.get("date_from") or None
         date_to = request.args.get("date_to") or None
         sort = request.args.get("sort") or "rank"
@@ -643,8 +780,11 @@ def make_app(db_path: str):
                 elif provider_filter == "chatgpt":
                     base_sql += " AND d.source LIKE '%chatgpt%'"
             if role_filter:
-                base_sql += " AND d.role = ?"
-                params.append(role_filter)
+                if role_filter == "assistant":
+                    base_sql += " AND (d.role = 'assistant' OR d.role = 'system')"
+                else:
+                    base_sql += " AND d.role = ?"
+                    params.append(role_filter)
             # Get total count first
             count_sql = base_sql.replace(
                 "SELECT d.id, d.conv_id, d.title, d.role, d.date, d.source, snippet(docs_fts, 0, '<mark>', '</mark>', ' … ', 12) as snip",
