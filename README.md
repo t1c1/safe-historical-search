@@ -252,26 +252,28 @@ docker run -v ./files:/data -v ./index:/index -p 5001:5001 safe-historical-searc
 
 ## 🗺️ **Development Roadmap**
 
-### ✅ **Completed in v0.2.0**
+### ✅ **Completed in v0.2.x**
 - ~~**🎯 Interactive clickable filters**~~ ✅ Click pills to filter instantly
 - ~~**🔍 Expandable conversation context**~~ ✅ Full thread preview with highlighting
 - ~~**📅 Smart date picker**~~ ✅ Native calendar widgets replace confusing sliders
 - ~~**🤖 Unified AI roles**~~ ✅ Simplified to Human/Assistant (system+assistant combined)
 - ~~**⚡ Real-time filtering**~~ ✅ Instant results without page refreshes
 - ~~**📱 Mobile responsiveness**~~ ✅ Works beautifully on all devices
+- ~~**🤖 ChatGPT (OpenAI) logs import**~~ ✅ Full ChatGPT export support implemented
+- ~~**🏷️ Account filtering in search UI**~~ ✅ Multi-account support with provider pills
 
 ### 🎯 **Next Release (v0.3.0) - Q4 2025**
 - **🔍 Advanced search operators** - AND, OR, NOT, parentheses, quotes
 - **💾 Saved searches** - Bookmark and organize frequent searches
 - **⌨️ Keyboard shortcuts** - Power user navigation and search
 - **📊 Conversation statistics** - Word counts, response times, topic trends
-- **🐳 Docker containerization** - One-command deployment
+- **📱 Single-step installer** - Auto-dependency management and setup
 - **📤 Export functionality** - Save filtered results to various formats
 
 ### 🔮 **Future Releases (2026+)**
-- **⚡ Real-time indexing** - Auto-update as new conversations are exported
+- **⚡ Incremental indexing** - Auto-update with file watcher for new conversations
 - **🧠 Semantic search** - AI-powered similarity search beyond keyword matching
-- **📊 Analytics dashboard** - Conversation insights, usage patterns, topic clustering
+- **📊 Export analytics** - Advanced conversation insights and usage patterns
 - **🏷️ Smart tagging** - Auto-categorization and custom labels
 - **🔌 Plugin ecosystem** - Custom data sources and integrations
 - **🌐 Team collaboration** - Multi-user deployments with privacy controls
