@@ -3,11 +3,11 @@
   
   # Safe Historical Search
   
-  **🔍 Lightning-fast local search for your AI conversation history**
+  **🔍 Lightning-fast local search for ChatGPT and Claude conversation history**
   
-  *Privacy-first • Zero-cloud • Sub-second results • Interactive filtering*
+  *Export search tool • AI chat history • Privacy-first • Zero-cloud • Sub-second results • Interactive filtering*
   
-  [![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](VERSION)
+  [![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](VERSION)
   [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
   [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
   [![Flask](https://img.shields.io/badge/flask-3.0+-red.svg)](https://flask.palletsprojects.com)
@@ -19,7 +19,9 @@
 
 ## 🚀 Get Started in Under 60 Seconds
 
-**Transform your AI conversations into a searchable knowledge base instantly:**
+**Transform your ChatGPT and Claude conversations into a searchable knowledge base instantly:**
+
+**Keywords**: ChatGPT export search, Claude conversation search, AI chat history, OpenAI export tool, Anthropic data search, conversation archive, AI knowledge base
 
 > 💡 **Works with both Claude (Anthropic) and ChatGPT (OpenAI) exports!** Mix multiple accounts from both providers seamlessly.
 
@@ -79,7 +81,7 @@ mkdir -p files
 ## 🎯 Real-World Use Cases
 
 ### 🔬 **Research & Knowledge Management**
-Perfect for researchers, consultants, and knowledge workers who accumulate valuable insights through AI conversations.
+Perfect for researchers, consultants, data scientists, and knowledge workers who accumulate valuable insights through ChatGPT and Claude conversations. Search your AI chat exports like a personal research database.
 
 **Example workflows:**
 - *"Find that Python async solution from last month"* → Search `async python`, filter by Assistant
@@ -104,8 +106,8 @@ Students and lifelong learners can quickly retrieve educational content and buil
 - **Study session continuity** - Pick up where previous learning sessions left off
 - **Cross-reference learning** - Connect related concepts across different conversations
 
-### 🛠️ **Technical Troubleshooting**
-Developers and IT professionals can build a personal knowledge base of solutions.
+### 🛠️ **Developer & Technical Troubleshooting**
+Software developers, DevOps engineers, and IT professionals can build a personal knowledge base of coding solutions from their ChatGPT and Claude conversations. Perfect for searching code snippets, debugging solutions, and technical explanations.
 
 **Developer scenarios:**
 - **Bug fix retrieval** - "How did I solve that Docker networking issue?"
@@ -330,7 +332,7 @@ Found an issue or have an idea? We'd love to hear from you:
 
 ## 📋 **Version History**
 
-### **v0.2.0** - *Current Release* ✨
+### **v0.2.1** - *Current Release* ✨
 - Interactive filtering with clickable pills
 - Expandable conversation context
 - Smart date picker with native calendar widgets  
