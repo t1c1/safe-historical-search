@@ -19,22 +19,29 @@
 
 **Get up and running in under 2 minutes:**
 
-> 💡 **Pro tip**: Works with any Anthropic Claude export. Future versions will support ChatGPT/OpenAI exports too!
+> 💡 **Pro tip**: Works with both Claude (Anthropic) and ChatGPT (OpenAI) exports! Mix and match multiple accounts from both providers.
 
-### Step 1: Get your Claude data export first
+### Step 1: Get your AI conversation exports
+
+**For Claude (Anthropic):**
 1. **🔗 Go to [Claude Settings](https://claude.ai/settings/data-privacy-controls)**
 2. **📤 Request a data export** and wait for download
-3. **📂 Extract the zip** - you'll get these files:
-   - `conversations.json`
-   - `projects.json` 
-   - `users.json`
+3. **📂 Extract the zip** - you'll get: `conversations.json`, `projects.json`, `users.json`
+
+**For ChatGPT (OpenAI):**
+1. **🔗 Go to [ChatGPT Data Controls](https://chatgpt.com/settings/data-controls)**
+2. **📤 Export your data** and wait for download
+3. **📂 Extract the zip** - you'll get: `conversations.json`, `user.json`
 
 ### Step 2: Clone and setup (copy-paste ready):
 ```bash
 git clone https://github.com/t1c1/safe-historical-search.git
 cd safe-historical-search
 mkdir -p files
-# Copy your 3 export files into the ./files/ directory
+# Copy your export files into the ./files/ directory
+# For Claude: conversations.json, projects.json, users.json
+# For ChatGPT: conversations.json, user.json
+# Or mix both providers in the same folder!
 ```
 
 ### Step 3: Run the app:

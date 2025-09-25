@@ -2,7 +2,7 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Iterable, Tuple, List
-from ingest import parse_conversations, parse_projects, parse_users
+from ingest import parse_conversations, parse_projects, parse_users, parse_chatgpt_conversations, parse_chatgpt_user
 
 
 def ensure_db(db_path: Path) -> sqlite3.Connection:
@@ -93,15 +93,37 @@ def add_doc(conn: sqlite3.Connection, *, id, conv_id, title, role, ts, source, c
 
 
 def _parsers_for_export(export_dir: Path) -> Iterable[Tuple[str, Iterable[dict]]]:
-    p = export_dir / "conversations.json"
-    if p.exists():
-        yield ("anthropic.conversations.json", parse_conversations(p))
+    # Check for conversations.json and determine format
+    conversations_file = export_dir / "conversations.json"
+    if conversations_file.exists():
+        # Try to detect format by reading a small sample
+        try:
+            import json
+            with open(conversations_file, 'r', encoding='utf-8') as f:
+                sample = f.read(1024)  # Read first 1KB
+                if '"mapping"' in sample and '"author"' in sample:
+                    # Looks like ChatGPT format
+                    yield ("chatgpt.conversations.json", parse_chatgpt_conversations(conversations_file))
+                else:
+                    # Assume Anthropic format
+                    yield ("anthropic.conversations.json", parse_conversations(conversations_file))
+        except Exception:
+            # Fallback to Anthropic format
+            yield ("anthropic.conversations.json", parse_conversations(conversations_file))
+    
+    # Anthropic-specific files
     p = export_dir / "projects.json"
     if p.exists():
         yield ("anthropic.projects.json", parse_projects(p))
+    
+    # Handle both user file formats
     p = export_dir / "users.json"
     if p.exists():
         yield ("anthropic.users.json", parse_users(p))
+    
+    p = export_dir / "user.json"  # ChatGPT uses user.json
+    if p.exists():
+        yield ("chatgpt.user.json", parse_chatgpt_user(p))
 
 
 def build_index(export_dir: Path, out_dir: Path) -> Path:

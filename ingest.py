@@ -122,5 +122,94 @@ def parse_users(p: Path) -> Generator[Dict[str, Any], None, None]:
     }
 
 
+def parse_chatgpt_conversations(p: Path) -> Generator[Dict[str, Any], None, None]:
+    """Yield docs from ChatGPT export conversations.json.
+    
+    Expected format: list of conversations with id, title, create_time, 
+    mapping containing messages with role, content, create_time.
+    """
+    raw = json.loads(p.read_text(encoding="utf-8", errors="ignore"))
+    if not isinstance(raw, list):
+        return
+    
+    for conv in raw:
+        try:
+            conv_id = conv.get("id") or f"chatgpt:{abs(hash(json.dumps(conv)))%10**9}"
+            title = conv.get("title") or "ChatGPT Conversation"
+            
+            # ChatGPT stores messages in mapping -> <msg_id> -> message structure
+            mapping = conv.get("mapping", {})
+            messages = []
+            
+            # Build message list from mapping
+            for msg_id, msg_data in mapping.items():
+                message = msg_data.get("message")
+                if not message or not message.get("content"):
+                    continue
+                    
+                role = message.get("author", {}).get("role", "user")
+                content_parts = message.get("content", {}).get("parts", [])
+                content = " ".join(str(part) for part in content_parts if part)
+                
+                if not content.strip():
+                    continue
+                
+                # Parse timestamp
+                create_time = message.get("create_time")
+                ts_val = 0.0
+                if create_time:
+                    try:
+                        ts_val = float(create_time)
+                    except (ValueError, TypeError):
+                        ts_val = 0.0
+                
+                messages.append({
+                    "role": role,
+                    "content": content,
+                    "ts": ts_val,
+                    "msg_id": msg_id
+                })
+            
+            # Sort messages by timestamp
+            messages.sort(key=lambda x: x["ts"])
+            
+            # Yield each message as a document
+            for i, m in enumerate(messages):
+                yield {
+                    "id": f"{conv_id}:{i}:{m['role']}:{abs(hash(m['content']))%10**9}",
+                    "conv_id": conv_id,
+                    "title": title,
+                    "role": m["role"],
+                    "ts": m["ts"],
+                    "source": "chatgpt.conversations.json",
+                    "extra": {"msg_id": m["msg_id"]},
+                    "content": _norm_text(m["content"]),
+                    "msg_index": i,
+                }
+        except Exception:
+            continue
+
+
+def parse_chatgpt_user(p: Path) -> Generator[Dict[str, Any], None, None]:
+    """Yield a simple doc for ChatGPT user.json."""
+    try:
+        raw = json.loads(p.read_text(encoding="utf-8", errors="ignore"))
+        content = json.dumps(raw, ensure_ascii=False)
+        doc_id = f"chatgpt-user:{abs(hash(content))%10**9}"
+        yield {
+            "id": doc_id,
+            "conv_id": "chatgpt_user",
+            "title": "ChatGPT User Profile", 
+            "role": "system",
+            "ts": time.time(),
+            "source": "chatgpt.user.json",
+            "extra": None,
+            "content": content,
+            "msg_index": 0,
+        }
+    except Exception:
+        pass
+
+
 
 

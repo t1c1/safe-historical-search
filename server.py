@@ -82,10 +82,21 @@ body {
 .result-title a:hover { color: #3b82f6; }
 .result-meta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
 .pill{ 
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
-  color: #1e40af; border: 1px solid #93c5fd; 
   padding: 6px 14px; border-radius: 20px; font-size: 13px; 
   font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  border: 1px solid;
+}
+.pill.anthropic { 
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
+  color: #1e40af; border-color: #93c5fd;
+}
+.pill.chatgpt { 
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); 
+  color: #166534; border-color: #86efac;
+}
+.pill.default { 
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); 
+  color: #374151; border-color: #d1d5db;
 }
 .result-content { font-size: 16px; line-height: 1.7; color: #374151; margin-bottom: 16px; }
 mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3px 6px; border-radius: 6px; font-weight: 600; }
@@ -212,9 +223,11 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
           </div>
           
           <div class="result-meta">
-            <div class="pill">{{r['role']}}</div>
-            {% if r['date'] %}<div class="pill">{{r['date']}}</div>{% endif %}
-            <div class="pill">{{r['source']}}</div>
+            <div class="pill {% if 'anthropic' in r['source'] %}anthropic{% elif 'chatgpt' in r['source'] %}chatgpt{% else %}default{% endif %}">
+              {% if 'anthropic' in r['source'] %}🔵 Claude{% elif 'chatgpt' in r['source'] %}🟢 ChatGPT{% else %}{{r['source']}}{% endif %}
+            </div>
+            <div class="pill default">{{r['role']}}</div>
+            {% if r['date'] %}<div class="pill default">{{r['date']}}</div>{% endif %}
           </div>
           
           <div class="result-content">{{r['snip']|safe}}</div>
@@ -225,7 +238,7 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
             </a>
             {% if r['external_url'] %}
               <a href="{{ r['external_url'] }}" target="_blank" rel="noopener noreferrer">
-                🔗 Open in Claude
+                {% if 'chatgpt' in r['source'] %}🔗 Open in ChatGPT{% else %}🔗 Open in Claude{% endif %}
               </a>
             {% endif %}
           </div>
@@ -545,9 +558,13 @@ def make_app(db_path: str):
             except Exception:
                 return False
         
-        def safe_url_format(template: str, conv_id: str) -> str:
+        def safe_url_format(template: str, conv_id: str, source: str = "") -> str:
             try:
-                # Handle both encoded and unencoded templates
+                # Handle ChatGPT links
+                if "chatgpt" in source.lower():
+                    return f"https://chatgpt.com/c/{conv_id}"
+                
+                # Handle Claude links with template
                 if "{conv_id}" in template:
                     return template.replace("{conv_id}", conv_id)
                 elif "%7Bconv_id%7D" in template:
@@ -567,7 +584,13 @@ def make_app(db_path: str):
                 "date": r["date"],
                 "source": r["source"],
                 "snip": r["snip"],
-                "external_url": (safe_url_format(claude_url_template, r["conv_id"]) if (r["source"] and "anthropic" in r["source"] and looks_like_uuid(r["conv_id"])) else None),
+                "external_url": (
+                    safe_url_format(claude_url_template, r["conv_id"], r["source"]) 
+                    if (r["source"] and (
+                        ("anthropic" in r["source"] and looks_like_uuid(r["conv_id"])) or
+                        ("chatgpt" in r["source"] and r["conv_id"])
+                    )) else None
+                ),
             } for r in rows
         ]
         
@@ -711,8 +734,12 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; marg
                 return False
         sources = {r["source"] for r in rows if r["source"]}
         is_anthropic = any("anthropic" in s for s in sources)
+        is_chatgpt = any("chatgpt" in s for s in sources)
         external_url = None
-        if is_anthropic and looks_like_uuid(conv_id):
+        
+        if is_chatgpt:
+            external_url = f"https://chatgpt.com/c/{conv_id}"
+        elif is_anthropic and looks_like_uuid(conv_id):
             try:
                 if "{conv_id}" in claude_url_template:
                     external_url = claude_url_template.replace("{conv_id}", conv_id)
