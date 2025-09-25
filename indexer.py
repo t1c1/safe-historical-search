@@ -93,23 +93,24 @@ def add_doc(conn: sqlite3.Connection, *, id, conv_id, title, role, ts, source, c
 
 
 def _parsers_for_export(export_dir: Path) -> Iterable[Tuple[str, Iterable[dict]]]:
-    # Check for conversations.json and determine format
-    conversations_file = export_dir / "conversations.json"
-    if conversations_file.exists():
+    # Look for all conversation files (conversations.json, conversations 2.json, etc.)
+    import glob
+    conversation_files = list(export_dir.glob("conversations*.json"))
+    
+    for conv_file in conversation_files:
         # Try to detect format by reading a small sample
         try:
-            import json
-            with open(conversations_file, 'r', encoding='utf-8') as f:
-                sample = f.read(1024)  # Read first 1KB
+            with open(conv_file, 'r', encoding='utf-8') as f:
+                sample = f.read(2048)  # Read first 2KB for better detection
                 if '"mapping"' in sample and '"author"' in sample:
                     # Looks like ChatGPT format
-                    yield ("chatgpt.conversations.json", parse_chatgpt_conversations(conversations_file))
+                    yield (f"chatgpt.{conv_file.name}", parse_chatgpt_conversations(conv_file))
                 else:
                     # Assume Anthropic format
-                    yield ("anthropic.conversations.json", parse_conversations(conversations_file))
+                    yield (f"anthropic.{conv_file.name}", parse_conversations(conv_file))
         except Exception:
             # Fallback to Anthropic format
-            yield ("anthropic.conversations.json", parse_conversations(conversations_file))
+            yield (f"anthropic.{conv_file.name}", parse_conversations(conv_file))
     
     # Anthropic-specific files
     p = export_dir / "projects.json"
