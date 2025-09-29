@@ -249,3 +249,4 @@ class ConversationAnalytics:
         # Standard search logic here...
         # This would integrate with the existing search but add analytics
         pass
+

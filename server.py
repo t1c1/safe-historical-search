@@ -461,9 +461,10 @@ async function toggleContext(messageId, convId) {
     try {
       const response = await fetch(`/api/conversation/${convId}`);
       const data = await response.json();
-      
+
       if (data.error) {
-        contextDiv.innerHTML = `<div style="color: #dc2626;">Error: ${data.error}</div>`;
+        const suggestion = data.suggestion ? `<br><small style="color: #6b7280;">💡 ${data.suggestion}</small>` : '';
+        contextDiv.innerHTML = `<div style="color: #dc2626;">Error: ${data.error}${suggestion}</div>`;
       } else {
         let contextHtml = `<div style="font-weight: 600; margin-bottom: 12px;">📖 Full Conversation: ${data.title}</div>`;
         
@@ -486,7 +487,7 @@ async function toggleContext(messageId, convId) {
         contextDiv.innerHTML = contextHtml;
       }
     } catch (error) {
-      contextDiv.innerHTML = `<div style="color: #dc2626;">Error loading context: ${error.message}</div>`;
+      contextDiv.innerHTML = `<div style="color: #dc2626;">Error loading context: ${error.message}<br><small style="color: #6b7280;">💡 Try reindexing your conversations if you see this error frequently.</small></div>`;
     }
     
     contextDiv.style.display = 'block';
@@ -499,7 +500,11 @@ async function toggleContext(messageId, convId) {
 }
 
 function openConversation(convId) {
-  window.open(`/conv/${convId}`, '_blank');
+  const newWindow = window.open(`/conv/${convId}`, '_blank');
+  // If popup blocker prevents opening, show an alert
+  if (!newWindow) {
+    alert('Please allow popups for this site to view full conversations. You can also use the "Show context" feature to see more of the conversation inline.');
+  }
 }
 
 function applyFilters() {
@@ -997,21 +1002,24 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; marg
     @app.route("/api/conversation/<conv_id>")
     def api_conversation(conv_id):
         """API endpoint for conversation shelf"""
-        rows = db_holder["conn"].execute(
-            "SELECT title, role, date, ts, content, source FROM docs WHERE conv_id=? ORDER BY ts, rowid",
-            (conv_id,)
-        ).fetchall()
-        if not rows:
-            return {"error": "Conversation not found"}, 404
-        
-        title = rows[0]["title"] or f"Conversation {conv_id}"
-        messages = [{"role": r["role"], "date": r["date"], "content": r["content"]} for r in rows]
-        
-        return {
-            "title": title,
-            "conv_id": conv_id,
-            "messages": messages
-        }
+        try:
+            rows = db_holder["conn"].execute(
+                "SELECT title, role, date, ts, content, source FROM docs WHERE conv_id=? ORDER BY ts, rowid",
+                (conv_id,)
+            ).fetchall()
+            if not rows:
+                return {"error": "Conversation not found", "suggestion": "Try reindexing your conversations if you see this error frequently."}, 404
+
+            title = rows[0]["title"] or f"Conversation {conv_id}"
+            messages = [{"role": r["role"], "date": r["date"], "content": r["content"]} for r in rows]
+
+            return {
+                "title": title,
+                "conv_id": conv_id,
+                "messages": messages
+            }
+        except Exception as e:
+            return {"error": f"Database error: {str(e)}", "suggestion": "Try reindexing your conversations."}, 500
 
     @app.route("/conv/<conv_id>")
     def conversation(conv_id):
@@ -1020,8 +1028,25 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; marg
             (conv_id,)
         ).fetchall()
         if not rows:
-            flash(f"❌ Conversation not found: {conv_id}")
-            return redirect(url_for('home'))
+            # Instead of redirecting, show an error page in the new tab
+            error_template = """
+            <!doctype html>
+            <title>Conversation Not Found</title>
+            <style>
+            body { font-family: system-ui, -apple-system, sans-serif; margin: 40px; text-align: center; }
+            .error { background: #fee2e2; color: #dc2626; padding: 20px; border-radius: 8px; border: 1px solid #fecaca; }
+            .back { margin-top: 20px; display: inline-block; color: #6b7280; text-decoration: none; }
+            </style>
+            <div class="error">
+              <h2>❌ Conversation Not Found</h2>
+              <p>The conversation with ID <code>{{conv_id}}</code> was not found in the database.</p>
+              <p>This can happen if the search index is out of sync with the data. Try reindexing your conversations.</p>
+            </div>
+            <div>
+              <a href="{{ url_for('home') }}" class="back">← Back to Search</a>
+            </div>
+            """
+            return render_template_string(error_template, conv_id=conv_id)
         title = rows[0]["title"] or f"Conversation {conv_id}"
         first_date = None
         for r in rows:
