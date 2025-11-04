@@ -729,7 +729,11 @@ def make_app(db_path: str):
                 if any(op in p for op in ['"', "'", "AND", "OR", "NOT", "NEAR", ":"]):
                     expanded.append(p)
                 elif len(p) > 2:
-                    expanded.append(p + '*')
+                    # Quote tokens with special chars to prevent FTS errors
+                    if '-' in p or '+' in p:
+                        expanded.append('"' + p + '"*')
+                    else:
+                        expanded.append(p + '*')
                 else:
                     expanded.append(p)
             return " ".join(expanded)
