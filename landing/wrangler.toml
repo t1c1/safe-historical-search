@@ -1,0 +1,7 @@
+name = "inchive-landing"
+main = "worker.js"
+compatibility_date = "2023-12-01"
+
+kv_namespaces = [
+  { binding = "INCHIVE_WAITLIST", id = "9572e6b8c13d44b188a40ab495c9ea1c" }
+]
