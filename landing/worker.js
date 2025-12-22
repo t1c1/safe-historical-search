@@ -26,18 +26,19 @@ const HTML_CONTENT = `<!DOCTYPE html>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #000000;
-            --text-color: #c5c6c7;
-            --neon-blue: #4dabf7; /* Soft Blue */
-            --neon-orange: #ffd43b; /* Gold/Yellow */
-            --grid-line: rgba(77, 171, 247, 0.1);
-            --glass-bg: rgba(15, 20, 25, 0.85);
+            --bg-color: #0f172a;           /* Slate 900 - Deep, Professional Navy */
+            --text-color: #f1f5f9;         /* Slate 100 - Crisp White */
+            --neon-blue: #60a5fa;          /* Blue 400 - Royal/Marian Blue */
+            --neon-orange: #fbbf24;        /* Amber 400 - Warm Gold */
+            --grid-line: rgba(96, 165, 250, 0.1);
+            --glass-bg: rgba(15, 23, 42, 0.75); /* Slightly more opaque */
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-font-smoothing: antialiased; /* Sharper text */
         }
 
         body {
@@ -60,14 +61,16 @@ const HTML_CONTENT = `<!DOCTYPE html>
             background-image: 
                 linear-gradient(var(--grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 50px 50px;
+            background-size: 60px 60px;
             background-position: center bottom;
             transform: perspective(1000px) rotateX(60deg) scale(2);
             transform-origin: center bottom;
             z-index: -2;
-            animation: moveGrid 20s linear infinite;
-            mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+            animation: moveGrid 30s linear infinite;
+            mask-image: linear-gradient(to top, rgba(15, 23, 42, 1) 0%, rgba(15, 23, 42, 0) 90%);
+            -webkit-mask-image: linear-gradient(to top, rgba(15, 23, 42, 1) 0%, rgba(15, 23, 42, 0) 90%);
+            /* Ensure the grid itself is using the blue variable */
+            --grid-line: rgba(96, 165, 250, 0.15); 
         }
 
         @keyframes moveGrid {
@@ -81,7 +84,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
             bottom: 0;
             width: 100%;
             height: 60%;
-            background: radial-gradient(ellipse at bottom, rgba(77, 171, 247, 0.1) 0%, transparent 70%);
+            background: radial-gradient(ellipse at bottom, rgba(96, 165, 250, 0.2) 0%, transparent 70%); /* Stronger Blue Glow */
             z-index: -1;
             pointer-events: none;
         }
@@ -92,14 +95,15 @@ const HTML_CONTENT = `<!DOCTYPE html>
             max-width: 800px;
             padding: 60px 40px;
             z-index: 10;
-            background: var(--glass-bg);
+            background: rgba(15, 23, 42, 0.85); /* Darker Slate for contrast */
             border: 1px solid var(--neon-blue);
             box-shadow: 
-                0 0 30px rgba(0, 0, 0, 0.5),
-                inset 0 0 20px rgba(77, 171, 247, 0.05);
+                0 0 30px rgba(96, 165, 250, 0.15), /* Blue glow */
+                inset 0 0 20px rgba(96, 165, 250, 0.05);
             position: relative;
             border-radius: 8px;
             margin: 2rem;
+            backdrop-filter: blur(5px);
         }
 
         /* Corner accents - Removed "aggressive" angles for stability */
@@ -112,7 +116,9 @@ const HTML_CONTENT = `<!DOCTYPE html>
             margin-bottom: 0.5rem;
             text-transform: uppercase;
             color: #fff;
-            text-shadow: 0 0 15px rgba(77, 171, 247, 0.5);
+            text-shadow: 
+                0 0 10px var(--neon-blue),
+                0 0 20px rgba(96, 165, 250, 0.5); /* Enhanced Blue Glow */
         }
 
         p.subtitle {
@@ -132,23 +138,56 @@ const HTML_CONTENT = `<!DOCTYPE html>
         }
         
         .principle-card {
-            padding: 15px;
-            border-left: 2px solid var(--neon-orange);
-            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-left: 3px solid var(--neon-blue);
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 0 4px 4px 0;
+            transition: all 0.3s ease;
+        }
+
+        .principle-card:hover {
+            background: rgba(96, 165, 250, 0.1);
+            transform: translateX(5px);
+            box-shadow: -5px 0 15px rgba(96, 165, 250, 0.1);
         }
 
         .principle-card h3 {
-            color: var(--neon-orange);
+            color: var(--neon-blue);
             font-family: 'Orbitron', sans-serif;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
+            margin-bottom: 10px;
+            font-size: 1rem;
             letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         .principle-card p {
-            font-size: 0.85rem;
-            line-height: 1.4;
-            color: #aaa;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #94a3b8; /* Slate 400 */
+        }
+
+        @media (max-width: 768px) {
+            .principles {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 2.5rem; /* Smaller title on mobile */
+            }
+            
+            .container {
+                padding: 30px 20px;
+                margin: 1rem;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
         }
 
         /* Form */
@@ -159,12 +198,13 @@ const HTML_CONTENT = `<!DOCTYPE html>
             max-width: 500px;
             margin-left: auto;
             margin-right: auto;
+            position: relative;
         }
 
         input[type="email"] {
             flex: 1;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid #444;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(96, 165, 250, 0.3);
             border-radius: 4px;
             padding: 16px 20px;
             color: #fff;
@@ -172,36 +212,50 @@ const HTML_CONTENT = `<!DOCTYPE html>
             font-size: 1rem;
             outline: none;
             transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
 
         input[type="email"]:focus {
             border-color: var(--neon-blue);
-            box-shadow: 0 0 10px rgba(77, 171, 247, 0.1);
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        input[type="email"]::placeholder {
+            color: rgba(96, 165, 250, 0.4);
         }
 
         button {
             background: var(--neon-blue);
-            color: #000;
+            color: #0f172a; /* Dark text on button */
             border: none;
             border-radius: 4px;
             padding: 16px 32px;
             font-family: 'Orbitron', sans-serif;
             font-size: 0.9rem;
-            font-weight: 700;
+            font-weight: 900;
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 1px;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
         button:hover {
             background: #fff;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
+            transform: translateY(-1px);
         }
 
-
         button:active {
-            transform: scale(0.98);
+            transform: translateY(1px);
+        }
+        
+        button:disabled {
+            opacity: 0.7;
+            cursor: wait;
+            background: #94a3b8;
         }
 
         .status {
@@ -220,10 +274,19 @@ const HTML_CONTENT = `<!DOCTYPE html>
         /* Footer */
         .footer {
             margin-top: 3rem;
-            font-size: 0.8rem;
-            color: rgba(0, 255, 255, 0.4);
+            font-size: 0.7rem;
+            color: rgba(96, 165, 250, 0.15); /* Barely visible ghost blue */
             text-transform: uppercase;
             letter-spacing: 2px;
+            font-family: 'Share Tech Mono', monospace;
+            transition: all 0.5s ease;
+            cursor: default;
+        }
+
+        .footer:hover {
+            color: var(--neon-orange); /* Reveals in Gold on hover */
+            text-shadow: 0 0 10px var(--neon-orange);
+            opacity: 1;
         }
         
         /* Floating Data Particles */
@@ -282,7 +345,8 @@ const HTML_CONTENT = `<!DOCTYPE html>
     </div>
 
     <div class="footer">
-        &copy; 2025 Inchive System &bull; Ad Majorem Dei Gloriam
+        <!-- Hidden in plain sight, revealed to those who seek -->
+        Ad Majorem Dei Gloriam
     </div>
 
     <script>
