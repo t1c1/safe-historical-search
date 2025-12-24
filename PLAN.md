@@ -44,9 +44,40 @@ A privacy-first personal AI OS that ingests conversation history (ChatGPT, Claud
     - [ ] Build Mode (Drafting).
     - [ ] "Time Machine" Slider.
 
-## Architecture
-- **Backend**: Python (Flask) -> migrating to more robust service structure?
-- **Database**: SQLite (Metadata/Graph/FTS) + Vector Store (Embeddings).
-- **Processing**: Local pipeline for ingestion and embedding.
+---
+
+## Architecture Options
+
+### Option A: Self-Hosted (Open Source)
+- **Backend**: Python (Flask)
+- **Database**: SQLite (FTS5 + Knowledge Graph)
+- **Vectors**: sqlite-vec (local) or Cloudflare Vectorize
+- **Embeddings**: sentence-transformers (local) or API-based
+- **Cost**: $0
+
+### Option B: Inchive Cloud (Commercial)
+- **Edge Compute**: Cloudflare Workers
+- **AI**: Workers AI (@cf/baai/bge, @cf/meta/llama-3.1)
+- **Vectors**: Cloudflare Vectorize (768D, 5M vectors free)
+- **Database**: Cloudflare D1 (SQLite at edge)
+- **Storage**: Cloudflare R2 (S3-compatible)
+- **Cost**: ~$0.70/user/month at scale
+
+See `docs/SELF_HOST_VS_CLOUD.md` and `docs/CLOUD_ARCHITECTURE.md` for details.
+
+---
+
+## Cloudflare Stack Summary
+
+| Component | Service | Free Tier |
+|-----------|---------|-----------|
+| Compute | Workers | 100K req/day |
+| AI Inference | Workers AI | 10K neurons/day |
+| Vector DB | Vectorize | 5M vectors, 30M queries/mo |
+| SQL DB | D1 | 5GB, 5M reads/day |
+| Object Storage | R2 | 10GB, 10M reads/mo |
+| KV Cache | KV | 100K reads/day |
+
+**Estimated margin at 10K users:** 90%+ ($40K/mo revenue, $4K/mo costs)
 
 
