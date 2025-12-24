@@ -53,10 +53,57 @@ The search worker provides AI-powered semantic search using:
 wrangler vectorize create inchive-conversations --dimensions=768 --metric=cosine
 ```
 
+### 1b. Enable metadata filtering for multi user
+
+To enforce per user isolation via metadata filters, create a metadata index for `user_id`:
+
+```bash
+wrangler vectorize create-metadata-index inchive-conversations --propertyName user_id --type string
+```
+
+Important: vectors upserted before this metadata index is created will not be filterable by `user_id` until you re-upsert them.
+
 ### 2. Set API Secret
 ```bash
 wrangler secret put API_SECRET -c wrangler-search.toml
 ```
+
+### 2b. Multi user setup (recommended)
+
+Create a KV namespace to store API keys mapped to user ids:
+
+```bash
+wrangler kv namespace create INCHIVE_USER_KEYS
+```
+
+Then copy the id into `landing/wrangler-search.toml` under `[[kv_namespaces]]`.
+
+To add a user key, generate an API key, hash it, then store the mapping:
+
+```bash
+API_KEY="paste_a_random_key_here"
+USER_ID="user_123"
+HASH=$(python - <<'PY'
+import hashlib, os
+print(hashlib.sha256(os.environ["API_KEY"].encode()).hexdigest())
+PY
+)
+wrangler kv key put -n INCHIVE_USER_KEYS "key:${HASH}" "${USER_ID}"
+```
+
+Note: use a key prefix without a colon to avoid KV URL encoding edge cases:
+
+```bash
+wrangler kv key put -n INCHIVE_USER_KEYS "key_${HASH}" "${USER_ID}"
+```
+
+Requests then use:
+
+```bash
+curl -H "Authorization: Bearer ${API_KEY}" ...
+```
+
+All search and upsert operations are automatically scoped to that `USER_ID` via Vectorize metadata filtering (`user_id`).
 
 ### 3. Deploy Search Worker
 ```bash

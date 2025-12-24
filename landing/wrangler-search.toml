@@ -11,6 +11,11 @@ binding = "AI"
 binding = "VECTORIZE_INDEX"
 index_name = "inchive-conversations"
 
+# KV namespace for API keys (multi user isolation)
+[[kv_namespaces]]
+binding = "USER_KEYS"
+id = "6e3b7b4c72754570bd1963a12c1334ca"
+
 # Secrets (set via wrangler secret put)
 # API_SECRET - for authenticated endpoints
 
