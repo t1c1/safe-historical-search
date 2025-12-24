@@ -2,6 +2,12 @@ name = "inchive-landing"
 main = "worker.js"
 compatibility_date = "2023-12-01"
 
+# Custom domain (requires inchive.com to be added to Cloudflare)
+routes = [
+  { pattern = "inchive.com", custom_domain = true },
+  { pattern = "www.inchive.com", custom_domain = true }
+]
+
 # Development variables (Replace with `wrangler secret put` for production)
 [vars]
 ADMIN_PASSWORD = "change_this_password_immediately"
