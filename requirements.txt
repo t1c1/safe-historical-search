@@ -1,4 +1,11 @@
 Flask>=3.0.0,<4
 
+# Vector embeddings (optional, for semantic search)
+# sentence-transformers>=2.2.0  # Local embeddings (pip install sentence-transformers)
+# sqlite-vec>=0.1.0             # SQLite vector extension (pip install sqlite-vec)
+
+# For API-based embeddings
+requests>=2.28.0
+
 
 

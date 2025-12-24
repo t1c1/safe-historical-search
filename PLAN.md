@@ -15,14 +15,17 @@ A privacy-first personal AI OS that ingests conversation history (ChatGPT, Claud
     - [x] Add `--kg` flag to `index.py` for building knowledge graph database.
 
 ## Phase 2: Personal Memory Index (Embeddings & RAG)
-- [ ] **Vector Store Integration**:
-    - [ ] Select local vector DB (e.g., ChromaDB, LanceDB, or `sqlite-vec`).
-    - [ ] Implement embedding generation for Turns and Conversations.
+- [x] **Vector Store Integration**:
+    - [x] Select local vector DB: `sqlite-vec` with fallback cosine similarity.
+    - [x] Add Cloudflare Vectorize support for edge deployment.
+    - [x] Implement embedding generation for Turns via `embeddings.py`.
+    - [x] Support multiple providers: local (sentence-transformers), Cloudflare Workers AI, OpenAI.
+    - [x] Add `--embed` and `--full` flags to `index.py`.
 - [ ] **Clustering Engine**:
     - [ ] Topic Clusters (Embeddings + Clustering algo).
     - [ ] Project Clusters (Keyword/NER based).
 - [ ] **Memory Layers**:
-    - [ ] Raw Archive (Exact search - already partially done).
+    - [x] Raw Archive (Exact search via FTS5).
     - [ ] Derived Notes (Summarization pipeline).
     - [ ] Stable Memory (User-approved high-value items).
 

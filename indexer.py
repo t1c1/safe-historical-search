@@ -241,3 +241,151 @@ def build_dual_index(sources: List[Tuple[str, Path]], out_dir: Path) -> Tuple[Pa
     return legacy_path, kg_path
 
 
+# Vector embedding indexing
+
+def build_embeddings(
+    sources: List[Tuple[str, Path]], 
+    out_dir: Path,
+    provider: str = "local",
+    batch_size: int = 32,
+    **provider_kwargs
+) -> Path:
+    """
+    Build vector embeddings for all conversation turns.
+    
+    Args:
+        sources: List of (account_name, export_dir) tuples
+        out_dir: Output directory for the vector database
+        provider: Embedding provider ("local", "cloudflare", "openai")
+        batch_size: Number of texts to embed at once
+        **provider_kwargs: Provider-specific arguments
+    
+    Returns:
+        Path to the vector database
+    """
+    from embeddings import get_embedder
+    from vector_store import get_vector_store
+    
+    # Initialize embedder
+    embedder = get_embedder(provider, **provider_kwargs)
+    print(f"Using {provider} embedder: {embedder.model_name} ({embedder.dimensions}D)")
+    
+    # Initialize vector store
+    vector_db_path = out_dir / "vectors.db"
+    vector_store = get_vector_store(
+        "sqlite", 
+        db_path=vector_db_path,
+        dimensions=embedder.dimensions
+    )
+    
+    total_embedded = 0
+    batch_texts = []
+    batch_metadata = []
+    
+    def flush_batch():
+        nonlocal total_embedded, batch_texts, batch_metadata
+        if not batch_texts:
+            return
+        
+        try:
+            embeddings = embedder.embed(batch_texts)
+            items = [
+                (meta["id"], emb, meta)
+                for emb, meta in zip(embeddings, batch_metadata)
+            ]
+            vector_store.insert_batch(items)
+            total_embedded += len(items)
+        except Exception as e:
+            print(f"  Warning: batch embedding failed: {e}")
+        
+        batch_texts = []
+        batch_metadata = []
+    
+    for account, export_dir in sources:
+        conversation_files = list(export_dir.glob("conversations*.json"))
+        
+        for conv_file in conversation_files:
+            fmt = _detect_format(conv_file)
+            print(f"Embedding {account}:{conv_file.name} ({fmt} format)...")
+            
+            if fmt == "chatgpt":
+                parser = parse_chatgpt_unified(conv_file)
+            else:
+                parser = parse_conversations_unified(conv_file)
+            
+            for conv in parser:
+                for turn in conv.turns:
+                    # Skip very short content
+                    if len(turn.content.strip()) < 20:
+                        continue
+                    
+                    batch_texts.append(turn.content[:2000])  # Truncate long content
+                    batch_metadata.append({
+                        "id": turn.id,
+                        "conv_id": conv.id,
+                        "title": conv.title,
+                        "role": turn.role,
+                        "timestamp": turn.timestamp,
+                        "source": conv.source.value,
+                        "account": account
+                    })
+                    
+                    if len(batch_texts) >= batch_size:
+                        flush_batch()
+                        if total_embedded % 500 == 0:
+                            print(f"  Embedded {total_embedded:,} turns...")
+    
+    # Final flush
+    flush_batch()
+    
+    print(f"\nVector embeddings built at {vector_db_path}")
+    print(f"  Total vectors: {vector_store.count():,}")
+    
+    return vector_db_path
+
+
+def build_full_index(
+    sources: List[Tuple[str, Path]], 
+    out_dir: Path,
+    embed_provider: str = "local",
+    **embed_kwargs
+) -> dict:
+    """
+    Build complete index: legacy FTS + Knowledge Graph + Vector embeddings.
+    
+    Args:
+        sources: List of (account_name, export_dir) tuples
+        out_dir: Output directory
+        embed_provider: Embedding provider for vectors
+        **embed_kwargs: Embedding provider arguments
+    
+    Returns:
+        Dict with paths to all created databases
+    """
+    print("=" * 60)
+    print("Building Full Inchive Index")
+    print("=" * 60)
+    
+    print("\n[1/3] Building Legacy FTS Index...")
+    legacy_path = build_index_multi(sources, out_dir)
+    
+    print("\n[2/3] Building Knowledge Graph...")
+    kg_path = build_knowledge_graph(sources, out_dir)
+    
+    print("\n[3/3] Building Vector Embeddings...")
+    vector_path = build_embeddings(sources, out_dir, provider=embed_provider, **embed_kwargs)
+    
+    print("\n" + "=" * 60)
+    print("Index Complete!")
+    print("=" * 60)
+    print(f"  Legacy FTS:      {legacy_path}")
+    print(f"  Knowledge Graph: {kg_path}")
+    print(f"  Vector Store:    {vector_path}")
+    
+    return {
+        "legacy": legacy_path,
+        "knowledge_graph": kg_path,
+        "vectors": vector_path
+    }
+
+
