@@ -4,7 +4,7 @@ from flask import Flask, request, render_template_string, redirect, url_for, fla
 
 TEMPLATE = """
 <!doctype html>
-<title>Safe Historical Search</title>
+<title>Inchive</title>
 <style>
 * { box-sizing: border-box; }
 body { 
@@ -214,7 +214,7 @@ mark{ background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); padding: 3p
   <div class="header">
     <div style="display: flex; justify-content: space-between; align-items: center;">
       <div>
-        <h1>🔍 Safe Historical Search</h1>
+        <h1>🔍 Inchive</h1>
         <div class="subtitle">Lightning-fast search for your AI conversations</div>
       </div>
       <a href="{{ url_for('admin') }}" style="color: rgba(255,255,255,0.9); text-decoration: none; padding: 8px 16px; background: rgba(255,255,255,0.1); border-radius: 8px; transition: background 0.2s;">
@@ -528,7 +528,7 @@ function applyFilters() {
 
 ADMIN_TEMPLATE = """
 <!doctype html>
-<title>Admin - Safe Historical Search</title>
+<title>Admin - Inchive</title>
 <style>
 * { box-sizing: border-box; }
 body { 
@@ -657,7 +657,7 @@ body {
       <h2>📞 Support & Contact</h2>
       <p>Need help or found a bug? Visit the project repository for documentation, issues, and updates.</p>
       <p>
-        <a href="https://github.com/t1c1/safe-historical-search" target="_blank" 
+        <a href="https://github.com/inchive/inchive" target="_blank" 
            style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: #1f2937; color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background 0.2s;">
           <span>📦</span> View on GitHub
         </a>

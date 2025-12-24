@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# S-tier quickstart for Anthropic Historical Search
+# S-tier quickstart for Inchive
 # Usage:
 #   ./quickstart.sh [PORT]
 # This will use the local ./files folder for your export JSON files.
@@ -11,7 +11,7 @@ PORT=${1:-}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-echo "🚀 Starting Safe Historical Search setup..."
+echo "🚀 Starting Inchive setup..."
 
 # Check Python version
 if ! command -v python3 &> /dev/null; then
@@ -71,7 +71,7 @@ done
 
 echo ""
 echo "🌐 Server starting on http://127.0.0.1:$PORT"
-echo "✨ Safe Historical Search is ready!"
+echo "✨ Inchive is ready!"
 echo "📖 Press Ctrl+C to stop the server"
 echo ""
 python server.py --db ./index/chatgpt.db --port "$PORT"

@@ -1,7 +1,7 @@
 <div align="center">
   <img src="logo.png" alt="Safe Historical Search" width="120" height="120">
   
-  # Safe Historical Search
+  # Inchive
   
   **🔍 Lightning-fast local search for ChatGPT and Claude conversation history**
   
@@ -39,7 +39,7 @@
 
 ### Step 2: One-Command Setup
 ```bash
-git clone https://github.com/t1c1/safe-historical-search.git
+git clone https://github.com/inchive/inchive.git
 cd safe-historical-search
 mkdir -p files
 # 📁 Copy your export files into ./files/
@@ -155,7 +155,7 @@ Writers, designers, and creators can rediscover and build on creative ideas.
 
 ### 🚀 **Quick Start (Recommended)**
 ```bash
-git clone https://github.com/t1c1/safe-historical-search.git
+git clone https://github.com/inchive/inchive.git
 cd safe-historical-search
 ./quickstart.sh
 ```
@@ -167,7 +167,7 @@ cd safe-historical-search
 
 ```bash
 # Clone repository
-git clone https://github.com/t1c1/safe-historical-search.git
+git clone https://github.com/inchive/inchive.git
 cd safe-historical-search
 
 # Create virtual environment
@@ -319,8 +319,8 @@ docker run -v ./files:/data -v ./index:/index -p 5001:5001 safe-historical-searc
 
 ### 🐛 **Bug Reports & Feature Requests**
 Found an issue or have an idea? We'd love to hear from you:
-- **GitHub Issues**: [Report bugs or request features](https://github.com/t1c1/safe-historical-search/issues)
-- **Discussions**: [Community chat and questions](https://github.com/t1c1/safe-historical-search/discussions)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/inchive/inchive/issues)
+- **Discussions**: [Community chat and questions](https://github.com/inchive/inchive/discussions)
 
 ### 💻 **Contributing Code**
 - **Fork the repository** and create a feature branch
@@ -388,7 +388,7 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and migration guides
   **⭐ Star this repository if it helps you unlock the knowledge in your AI conversations!**
   
   ```bash
-  git clone https://github.com/t1c1/safe-historical-search.git
+  git clone https://github.com/inchive/inchive.git
   cd safe-historical-search && ./quickstart.sh
   ```
   
@@ -398,6 +398,6 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and migration guides
   
   <sub>Privacy-first • Open source • Made in America • Zero telemetry</sub>
   
-  <sub>[📖 Documentation](https://github.com/t1c1/safe-historical-search/wiki) • [🐛 Issues](https://github.com/t1c1/safe-historical-search/issues) • [💬 Discussions](https://github.com/t1c1/safe-historical-search/discussions) • [🔄 Changelog](CHANGELOG.md)</sub>
+  <sub>[📖 Documentation](https://github.com/inchive/inchive/wiki) • [🐛 Issues](https://github.com/inchive/inchive/issues) • [💬 Discussions](https://github.com/inchive/inchive/discussions) • [🔄 Changelog](CHANGELOG.md)</sub>
   
 </div>

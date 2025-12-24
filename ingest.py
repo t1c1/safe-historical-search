@@ -1,7 +1,7 @@
 import json, re, html, time
 from pathlib import Path
-from typing import Generator, Dict, Any
-
+from typing import Generator, Dict, Any, List
+from schema import Conversation, Turn, SourceType, Entity, Artifact
 
 def _norm_text(x: Any) -> str:
     if x is None:
@@ -10,30 +10,34 @@ def _norm_text(x: Any) -> str:
     x = re.sub(r"\s+", " ", x).strip()
     return x
 
-
-def parse_conversations(p: Path) -> Generator[Dict[str, Any], None, None]:
-    """Yield docs from anthropic-data/conversations.json.
-
-    Expected top-level: list of conversations; each has uuid, name, summary,
-    created_at, updated_at, and chat_messages list with sender, text, timestamps.
-    """
+def parse_conversations_unified(p: Path) -> Generator[Conversation, None, None]:
+    """Yield Conversation objects from Anthropic conversations.json."""
     raw = json.loads(p.read_text(encoding="utf-8", errors="ignore"))
     if not isinstance(raw, list):
         return
-    for conv in raw:
+
+    for conv_data in raw:
         try:
-            conv_id = conv.get("uuid") or conv.get("id") or f"anthropic:{abs(hash(json.dumps(conv)))%10**9}"
-            title = conv.get("name") or conv.get("summary") or "Anthropic Conversation"
-            msgs = conv.get("chat_messages") or []
+            conv_id = conv_data.get("uuid") or conv_data.get("id") or Conversation.generate_id(json.dumps(conv_data))
+            title = conv_data.get("name") or conv_data.get("summary") or "Anthropic Conversation"
+            created_at = 0.0
+            
+            # Try to find earliest timestamp
+            msgs = conv_data.get("chat_messages") or []
+            turns = []
+            
             for i, m in enumerate(msgs):
                 role = m.get("sender") or m.get("role") or "user"
                 content = m.get("text") or ""
+                
+                # Parse timestamp
                 ts_iso = None
                 content_blocks = m.get("content")
                 if isinstance(content_blocks, list) and content_blocks:
                     block0 = content_blocks[0]
                     ts_iso = block0.get("start_timestamp") or block0.get("stop_timestamp")
                 ts_iso = ts_iso or m.get("created_at") or m.get("updated_at")
+                
                 ts_val = 0.0
                 if isinstance(ts_iso, str):
                     try:
@@ -45,24 +49,136 @@ def parse_conversations(p: Path) -> Generator[Dict[str, Any], None, None]:
                             dt = datetime.fromisoformat(ts_iso2.replace("Z", "+00:00"))
                         ts_val = dt.timestamp()
                     except Exception:
-                        ts_val = 0.0
-                yield {
-                    "id": f"{conv_id}:{i}:{role}:{abs(hash(str(m)))%10**9}",
-                    "conv_id": conv_id,
-                    "title": title,
-                    "role": role,
-                    "ts": ts_val,
-                    "source": "anthropic.conversations.json",
-                    "extra": {k: v for k, v in m.items() if k not in ("text", "sender")},
-                    "content": _norm_text(content),
-                    "msg_index": i,
-                }
+                        pass
+                
+                if i == 0 and ts_val > 0:
+                    created_at = ts_val
+
+                turn_id = f"{conv_id}:{i}"
+                turns.append(Turn(
+                    id=turn_id,
+                    role=role,
+                    content=_norm_text(content),
+                    timestamp=ts_val or time.time(),
+                    metadata={k: v for k, v in m.items() if k not in ("text", "sender", "content")}
+                ))
+
+            yield Conversation(
+                id=conv_id,
+                title=title,
+                source=SourceType.ANTHROPIC,
+                created_at=created_at or time.time(),
+                updated_at=time.time(), # TODO: Find last message timestamp
+                turns=turns,
+                metadata=conv_data
+            )
+            
         except Exception:
             continue
 
+def parse_chatgpt_unified(p: Path) -> Generator[Conversation, None, None]:
+    """Yield Conversation objects from ChatGPT conversations.json."""
+    raw = json.loads(p.read_text(encoding="utf-8", errors="ignore"))
+    if not isinstance(raw, list):
+        return
+    
+    for conv_data in raw:
+        try:
+            conv_id = conv_data.get("id") or Conversation.generate_id(json.dumps(conv_data))
+            title = conv_data.get("title") or "ChatGPT Conversation"
+            create_time = conv_data.get("create_time") or 0.0
+            
+            mapping = conv_data.get("mapping", {})
+            turns = []
+            
+            # Helper to collect messages in order (ChatGPT mapping is a tree)
+            # For now, we linearize by timestamp
+            messages = []
+            for msg_id, msg_data in mapping.items():
+                message = msg_data.get("message")
+                if not message or not message.get("content"):
+                    continue
+                    
+                role = message.get("author", {}).get("role", "user")
+                content_parts = message.get("content", {}).get("parts", [])
+                content = " ".join(str(part) for part in content_parts if part)
+                
+                if not content.strip():
+                    continue
+                
+                ts = message.get("create_time") or 0.0
+                messages.append({
+                    "role": role,
+                    "content": content,
+                    "ts": float(ts),
+                    "id": msg_id,
+                    "metadata": message.get("metadata", {})
+                })
+            
+            messages.sort(key=lambda x: x["ts"])
+            
+            for m in messages:
+                turns.append(Turn(
+                    id=m["id"],
+                    role=m["role"],
+                    content=_norm_text(m["content"]),
+                    timestamp=m["ts"],
+                    model=m["metadata"].get("model_slug"),
+                    metadata=m["metadata"]
+                ))
+
+            yield Conversation(
+                id=conv_id,
+                title=title,
+                source=SourceType.OPENAI,
+                created_at=float(create_time),
+                updated_at=turns[-1].timestamp if turns else float(create_time),
+                turns=turns,
+                metadata={"moderation_results": conv_data.get("moderation_results")}
+            )
+            
+        except Exception:
+            continue
+
+# Keep legacy functions for now to avoid breaking existing indexing immediately
+# but mark them as deprecated if we were adding docstrings. 
+# We will redirect the indexer to use the unified parsers later.
+
+def parse_conversations(p: Path) -> Generator[Dict[str, Any], None, None]:
+    """Legacy: Flatten unified conversations back to doc dicts for SQLite."""
+    for conv in parse_conversations_unified(p):
+        for i, turn in enumerate(conv.turns):
+            yield {
+                "id": f"{conv.id}:{i}:{turn.role}:{abs(hash(turn.content))%10**9}",
+                "conv_id": conv.id,
+                "title": conv.title,
+                "role": turn.role,
+                "ts": turn.timestamp,
+                "source": "anthropic.conversations.json",
+                "extra": turn.metadata,
+                "content": turn.content,
+                "msg_index": i,
+            }
+
+def parse_chatgpt_conversations(p: Path) -> Generator[Dict[str, Any], None, None]:
+    """Legacy: Flatten unified conversations back to doc dicts for SQLite."""
+    for conv in parse_chatgpt_unified(p):
+        for i, turn in enumerate(conv.turns):
+            yield {
+                "id": f"{conv.id}:{i}:{turn.role}:{abs(hash(turn.content))%10**9}",
+                "conv_id": conv.id,
+                "title": conv.title,
+                "role": turn.role,
+                "ts": turn.timestamp,
+                "source": "chatgpt.conversations.json",
+                "extra": turn.metadata,
+                "content": turn.content,
+                "msg_index": i,
+            }
 
 def parse_projects(p: Path) -> Generator[Dict[str, Any], None, None]:
     """Yield docs from anthropic-data/projects.json."""
+    # Projects don't fit the Conversation model perfectly yet, keeping legacy for now
     raw = json.loads(p.read_text(encoding="utf-8", errors="ignore"))
     if not isinstance(raw, list):
         return
@@ -121,75 +237,6 @@ def parse_users(p: Path) -> Generator[Dict[str, Any], None, None]:
         "msg_index": 0,
     }
 
-
-def parse_chatgpt_conversations(p: Path) -> Generator[Dict[str, Any], None, None]:
-    """Yield docs from ChatGPT export conversations.json.
-    
-    Expected format: list of conversations with id, title, create_time, 
-    mapping containing messages with role, content, create_time.
-    """
-    raw = json.loads(p.read_text(encoding="utf-8", errors="ignore"))
-    if not isinstance(raw, list):
-        return
-    
-    for conv in raw:
-        try:
-            conv_id = conv.get("id") or f"chatgpt:{abs(hash(json.dumps(conv)))%10**9}"
-            title = conv.get("title") or "ChatGPT Conversation"
-            
-            # ChatGPT stores messages in mapping -> <msg_id> -> message structure
-            mapping = conv.get("mapping", {})
-            messages = []
-            
-            # Build message list from mapping
-            for msg_id, msg_data in mapping.items():
-                message = msg_data.get("message")
-                if not message or not message.get("content"):
-                    continue
-                    
-                role = message.get("author", {}).get("role", "user")
-                content_parts = message.get("content", {}).get("parts", [])
-                content = " ".join(str(part) for part in content_parts if part)
-                
-                if not content.strip():
-                    continue
-                
-                # Parse timestamp
-                create_time = message.get("create_time")
-                ts_val = 0.0
-                if create_time:
-                    try:
-                        ts_val = float(create_time)
-                    except (ValueError, TypeError):
-                        ts_val = 0.0
-                
-                messages.append({
-                    "role": role,
-                    "content": content,
-                    "ts": ts_val,
-                    "msg_id": msg_id
-                })
-            
-            # Sort messages by timestamp
-            messages.sort(key=lambda x: x["ts"])
-            
-            # Yield each message as a document
-            for i, m in enumerate(messages):
-                yield {
-                    "id": f"{conv_id}:{i}:{m['role']}:{abs(hash(m['content']))%10**9}",
-                    "conv_id": conv_id,
-                    "title": title,
-                    "role": m["role"],
-                    "ts": m["ts"],
-                    "source": "chatgpt.conversations.json",
-                    "extra": {"msg_id": m["msg_id"]},
-                    "content": _norm_text(m["content"]),
-                    "msg_index": i,
-                }
-        except Exception:
-            continue
-
-
 def parse_chatgpt_user(p: Path) -> Generator[Dict[str, Any], None, None]:
     """Yield a simple doc for ChatGPT user.json."""
     try:
@@ -209,7 +256,3 @@ def parse_chatgpt_user(p: Path) -> Generator[Dict[str, Any], None, None]:
         }
     except Exception:
         pass
-
-
-
-

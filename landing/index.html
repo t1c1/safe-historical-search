@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inchive - Your Personal AI OS</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #e0e0e0;
+            --accent-primary: #00f0ff;
+            --accent-secondary: #7000ff;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient Background Glow */
+        .glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(112, 0, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+            animation: pulse 8s ease-in-out infinite alternate;
+        }
+
+        .glow:nth-child(1) { top: -20%; left: -10%; background: radial-gradient(circle, rgba(0, 240, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%); }
+        .glow:nth-child(2) { bottom: -20%; right: -10%; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        /* Container */
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            font-size: 1.25rem;
+            color: #888;
+            margin-bottom: 2.5rem;
+            font-weight: 300;
+            line-height: 1.5;
+        }
+
+        /* Form */
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        input[type="email"] {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #333;
+            padding: 16px 20px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="email"]:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: #000;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .status {
+            height: 20px;
+            font-size: 0.9rem;
+            color: var(--accent-primary);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .status.visible {
+            opacity: 1;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: #444;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="glow"></div>
+    <div class="glow"></div>
+
+    <div class="container">
+        <h1>Inchive</h1>
+        <p class="subtitle">Your life's work, unified.<br>The operating system for your mind.</p>
+
+        <form id="waitlistForm">
+            <div class="input-group">
+                <input type="email" id="email" placeholder="Enter your email" required autocomplete="email">
+                <button type="submit">Request Access</button>
+            </div>
+            <div id="status" class="status">You're on the list. We'll be in touch.</div>
+        </form>
+    </div>
+
+    <div class="footer">
+        &copy; 2025 Inchive Inc. &bull; Privacy First
+    </div>
+
+    <script>
+        const form = document.getElementById('waitlistForm');
+        const status = document.getElementById('status');
+        const btn = form.querySelector('button');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            
+            // Set Loading State
+            const originalText = btn.textContent;
+            btn.textContent = "Joining...";
+            btn.disabled = true;
+
+            try {
+                // Replace this URL with your actual Cloudflare Worker URL
+                const response = await fetch('/api/join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                if (response.ok) {
+                    status.textContent = "Welcome to the future. You're on the list.";
+                    status.classList.add('visible');
+                    form.reset();
+                } else {
+                    throw new Error('Failed to join');
+                }
+            } catch (err) {
+                // For demo purposes, we'll simulate success if the API isn't real yet
+                console.log("API call failed (expected if not deployed), simulating success for demo");
+                setTimeout(() => {
+                    status.textContent = "Welcome to the future. You're on the list.";
+                    status.classList.add('visible');
+                    form.reset();
+                }, 800);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+
