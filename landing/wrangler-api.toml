@@ -1,0 +1,28 @@
+name = "inchive-api"
+main = "worker-api.js"
+compatibility_date = "2024-01-01"
+
+# Custom domains
+routes = [
+  { pattern = "api.inchive.com", custom_domain = true }
+]
+
+# D1 Database for users
+[[d1_databases]]
+binding = "DB"
+database_name = "inchive-users"
+database_id = "480cdba6-0b69-46f4-9b13-1bed748d483b"
+
+# Workers AI for embeddings
+[ai]
+binding = "AI"
+
+# Vectorize for vector search
+[[vectorize]]
+binding = "VECTORIZE_INDEX"
+index_name = "inchive-conversations"
+
+# KV for waitlist
+[[kv_namespaces]]
+binding = "WAITLIST"
+id = "9572e6b8c13d44b188a40ab495c9ea1c"
