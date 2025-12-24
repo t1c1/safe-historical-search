@@ -2,7 +2,13 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Iterable, Tuple, List
-from ingest import parse_conversations, parse_projects, parse_users, parse_chatgpt_conversations, parse_chatgpt_user
+from ingest import (
+    parse_conversations, parse_projects, parse_users, 
+    parse_chatgpt_conversations, parse_chatgpt_user,
+    parse_conversations_unified, parse_chatgpt_unified
+)
+from schema import SourceType
+from storage import KnowledgeStore
 
 
 def ensure_db(db_path: Path) -> sqlite3.Connection:
@@ -151,5 +157,87 @@ def build_index_multi(sources: List[Tuple[str, Path]], out_dir: Path) -> Path:
     print(f"Indexed {total:,} docs into {db_path}")
     conn.close()
     return db_path
+
+
+# New Knowledge Graph indexing functions
+
+def _detect_format(conv_file: Path) -> str:
+    """Detect if a conversations file is ChatGPT or Claude format."""
+    try:
+        with open(conv_file, 'r', encoding='utf-8') as f:
+            sample = f.read(2048)
+            if '"mapping"' in sample and '"author"' in sample:
+                return "chatgpt"
+            return "claude"
+    except Exception:
+        return "claude"
+
+
+def build_knowledge_graph(sources: List[Tuple[str, Path]], out_dir: Path) -> Path:
+    """Build a Knowledge Graph database from export files.
+    
+    This is the new indexer that uses the unified schema and creates
+    a proper knowledge graph with nodes and edges.
+    
+    Args:
+        sources: List of (account_name, export_dir) tuples
+        out_dir: Output directory for the database
+    
+    Returns:
+        Path to the created database
+    """
+    db_path = out_dir / "knowledge.db"
+    store = KnowledgeStore(db_path)
+    
+    total_convs = 0
+    total_turns = 0
+    
+    for account, export_dir in sources:
+        # Find conversation files
+        conversation_files = list(export_dir.glob("conversations*.json"))
+        
+        for conv_file in conversation_files:
+            fmt = _detect_format(conv_file)
+            print(f"Processing {account}:{conv_file.name} ({fmt} format)...")
+            
+            if fmt == "chatgpt":
+                parser = parse_chatgpt_unified(conv_file)
+            else:
+                parser = parse_conversations_unified(conv_file)
+            
+            for conv in parser:
+                store.add_conversation(conv, account)
+                total_convs += 1
+                total_turns += len(conv.turns)
+                
+                if total_convs % 100 == 0:
+                    print(f"  Processed {total_convs:,} conversations, {total_turns:,} turns...")
+                    store.commit()
+        
+        # TODO: Handle projects.json and users.json as special node types
+    
+    store.commit()
+    
+    stats = store.get_stats()
+    print(f"\nKnowledge Graph built at {db_path}")
+    print(f"  Conversations: {stats['conversations']:,}")
+    print(f"  Turns: {stats['turns']:,}")
+    print(f"  Nodes: {stats['nodes']:,}")
+    print(f"  Edges: {stats['edges']:,}")
+    print(f"  Code blocks: {stats['code_blocks']:,}")
+    print(f"  Links: {stats['links']:,}")
+    
+    store.close()
+    return db_path
+
+
+def build_dual_index(sources: List[Tuple[str, Path]], out_dir: Path) -> Tuple[Path, Path]:
+    """Build both legacy and knowledge graph indexes.
+    
+    This allows gradual migration while keeping the existing search working.
+    """
+    legacy_path = build_index_multi(sources, out_dir)
+    kg_path = build_knowledge_graph(sources, out_dir)
+    return legacy_path, kg_path
 
 

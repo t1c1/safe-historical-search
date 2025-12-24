@@ -4,13 +4,15 @@
 A privacy-first personal AI OS that ingests conversation history (ChatGPT, Claude), creates a "Personal Knowledge Graph," and provides a unified interface for search, chat, and action.
 
 ## Phase 1: Ingest & Unify (Current Focus)
-- [ ] **Unified Schema Definition**: Define Python dataclasses/models for `Conversation`, `Turn`, `Claim`, `Entity`, `Artifact`, `Decision`, `Task`.
-- [ ] **Enhanced Ingestion**: 
-    - [ ] Refactor `ingest.py` to map raw JSON (Anthropic/OpenAI) into the Unified Schema.
-    - [ ] Extract metadata (code blocks, links, images).
-- [ ] **Storage Layer Upgrade**:
-    - [ ] Move beyond simple SQLite FTS5.
-    - [ ] Design schema for storing the Knowledge Graph (Nodes & Edges).
+- [x] **Unified Schema Definition**: Define Python dataclasses/models for `Conversation`, `Turn`, `Claim`, `Entity`, `Artifact`, `Decision`, `Task`.
+    - See `schema.py`: Complete with Node/Edge types, CodeBlock, Link extraction utilities
+- [x] **Enhanced Ingestion**: 
+    - [x] Refactor `ingest.py` to map raw JSON (Anthropic/OpenAI) into the Unified Schema.
+    - [x] Extract metadata (code blocks, links, images) via `extract_code_blocks()` and `extract_links()`.
+- [x] **Storage Layer Upgrade**:
+    - [x] Move beyond simple SQLite FTS5: See `storage.py` with KnowledgeStore class.
+    - [x] Design schema for storing the Knowledge Graph (Nodes & Edges).
+    - [x] Add `--kg` flag to `index.py` for building knowledge graph database.
 
 ## Phase 2: Personal Memory Index (Embeddings & RAG)
 - [ ] **Vector Store Integration**:
@@ -43,4 +45,5 @@ A privacy-first personal AI OS that ingests conversation history (ChatGPT, Claud
 - **Backend**: Python (Flask) -> migrating to more robust service structure?
 - **Database**: SQLite (Metadata/Graph/FTS) + Vector Store (Embeddings).
 - **Processing**: Local pipeline for ingestion and embedding.
+
 
